@@ -68,10 +68,54 @@ namespace StockAnalyzer.Windows
                 }
                 #endregion
 
-                var loadedStocks = await Task.WhenAll(tickerLoadingTasks);
+                var loadedStocks = (await Task.WhenAll(tickerLoadingTasks)).SelectMany(stock => stock);
 
+                // it will block out the ui
+                // it will never begin nor complete in order
+                // same for Paraller.Foreach
+                // Parallel.For
+                // Blocks UI Thread
+                Parallel.Invoke(() =>
+                {
+                    Debug.WriteLine("Starting operation 1");
+
+                    CalculateExpensiveComputation(loadedStocks);
+
+                    Debug.WriteLine("Completed operation 1");
+
+                    // if we use dispatcher like the Task lib it will DEADLOCK
+                    //Dispatcher.Invoke(() =>
+                    //{
+
+                    //});
+
+                },
+                ()=>{
+                    Debug.WriteLine("Starting operation 2");
+
+                    CalculateExpensiveComputation(loadedStocks);
+
+                    Debug.WriteLine("Completed operation 2");
+
+                },
+                ()=>{
+                    Debug.WriteLine("Starting operation 3");
+
+                    CalculateExpensiveComputation(loadedStocks);
+
+                    Debug.WriteLine("Completed operation 3");
+
+                },
+                ()=>{
+                    Debug.WriteLine("Starting operation 4");
+
+                    CalculateExpensiveComputation(loadedStocks);
+
+                    Debug.WriteLine("Completed operation 4");
+
+                });
                 
-                Stocks.ItemsSource = loadedStocks.SelectMany(stocks => stocks);
+                Stocks.ItemsSource = loadedStocks;
             }
             catch (Exception ex)
             {
